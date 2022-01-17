@@ -82,15 +82,15 @@ filesWithoutFolders.forEach( fileDetails => {
   const remainingMobileRows = [ ...mobileReadyRows ]
   let fileBatchSize = process.argv[2] ?? 50
 
+  const saveFolderPath = path.join( __dirname, 'targetFiles', withoutPrefix )
+  fs.mkdirSync(saveFolderPath)
+
   const totalRowCount = mobileReadyRows.length
   let rowPointer = 0
-  let fileNumber = 1
 
-  while (rowPointer < totalRowCount) {
-    // grab the next x rows
-    // load 50 rows
-    
+  while (rowPointer < totalRowCount) { 
     const rowsForThisFile = []
+    const separatedFilePath = path.join( saveFolderPath, `${withoutPrefix} ${rowPointer + 1}.csv` )
 
       for (let i = 0; i < fileBatchSize; i++) {
         if (rowPointer >= totalRowCount) {
@@ -104,8 +104,6 @@ filesWithoutFolders.forEach( fileDetails => {
     // save to a file using current prefix
     const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
-    const separatedFilePath = path.join( __dirname, 'targetFiles', withoutPrefix, `${withoutPrefix}-${fileNumber}.csv` )
-
     const csvWriter = createCsvWriter({
       path: separatedFilePath,
       header: [
@@ -118,12 +116,11 @@ filesWithoutFolders.forEach( fileDetails => {
     csvWriter
       .writeRecords( rowsForThisFile )
         .then(() => {
-          console.log( `wrote to file ${fileNumber}` )
+          console.log( 'successfully wrote file' )
         })
-        .catch( e => { throw new Error(e) } )
-
-    // update the pointer
-    fileNumber += 1
+        .catch( e => { 
+          throw new Error(e) 
+        } )
   }
 
 
