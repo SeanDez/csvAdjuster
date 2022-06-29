@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const reader = require('xlsx')
 const { parse } = require('csv-parse/sync')
 
 // get folder and filenames
@@ -83,21 +84,20 @@ filesWithoutFolders.forEach(fileDetails => {
     if (mobileReadyRows.length) {
       const saveFolderPath = path.join(__dirname, 'targetFiles', withoutPrefix)
       fs.mkdirSync(saveFolderPath)
-      const headers = Object.keys(mobileReadyRows[0]).map(key => ({ id: key, title: key }))
-      const filePath = path.join(saveFolderPath, `${withoutPrefix} flat by phone number.csv`)
-      const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-      const csvWriter = createCsvWriter({
-        path: filePath,
-        header: headers
-      })
-      csvWriter
-        .writeRecords(mobileReadyRows)
-        .then(() => {
-          console.log('successfully wrote file')
-        })
-        .catch(e => {
-          throw new Error(e)
-        })
+      const filePath = path.join(saveFolderPath, `${withoutPrefix} flat by phone number.xlsx`)
+      fs.writeFile(filePath, '', function (err) {
+        if (err) throw err;
+
+        const file = reader.readFile(filePath)
+        let data = mobileReadyRows
+
+        const ws = reader.utils.json_to_sheet(data)
+        file.SheetNames.pop() // remove default sheet
+        reader.utils.book_append_sheet(file, ws, "Sheet1")
+
+        reader.writeFile(file, filePath)
+      });
+
     }
   } else if (ext === ".xlsx" || ext === ".XLSX") {
     //  handle xlsx file
