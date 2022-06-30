@@ -97,12 +97,61 @@ filesWithoutFolders.forEach(fileDetails => {
 
         reader.writeFile(file, filePath)
       });
-
     }
   } else if (ext === ".xlsx" || ext === ".XLSX") {
-    //  handle xlsx file
-  }
+    const workBook = reader.readFile(targetFile)
+    const jsonDataPerSheet = [] //* [{sheetName: 'name', data:[]}]
+    workBook.SheetNames.forEach(y => {
+      var worksheet = workBook.Sheets[y];
 
+      const rows = reader.utils.sheet_to_json(worksheet)
+      const filteredRows = []
+      if (rows.length) {
+        let columnNames = []
+        rows.forEach((row, i) => {
+          if (i === 0) {
+            columnNames = Object.keys(row)
+          }
+          const getFilteredRow = getFiltredObject(row)
+          columnNames.forEach(columnName => {
+            let regex = /^Phone[0-9]+_Number$/i;
+            const isPhoneNumberRow = regex.test(columnName)
+            if (isPhoneNumberRow) {
+              const isNotBlank = row[columnName] ?? false
+              if (isNotBlank) {
+                // add a record to the master array
+                const record = {
+                  phone: row[columnName],
+                  ...getFilteredRow
+                }
+                filteredRows.push(record)
+              }
+            }
+          })
+        })
+      }
+      if(filteredRows.length){
+        jsonDataPerSheet.push({ name: y, data: filteredRows })
+      }
+    })
+    if (jsonDataPerSheet.length) {
+      const saveFolderPath = path.join(__dirname, 'targetFiles', withoutPrefix)
+      fs.mkdirSync(saveFolderPath)
+      const filePath = path.join(saveFolderPath, `${withoutPrefix} flat by phone number.xlsx`)
+      fs.writeFile(filePath, '', function (err) {
+        if (err) throw err;
+
+        const file = reader.readFile(filePath)
+        file.SheetNames.pop() // remove default sheet
+
+        jsonDataPerSheet.forEach(sheet => {
+          const ws = reader.utils.json_to_sheet(sheet.data)
+          reader.utils.book_append_sheet(file, ws, sheet.name)
+        })
+        reader.writeFile(file, filePath)
+      });
+    }
+  }
 })
 
 
